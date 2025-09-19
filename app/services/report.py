@@ -40,11 +40,22 @@ KEYS_DIR = DATA_DIR / "keys"
 FONTS_DIR = DATA_DIR / "fonts"
 DEJAVU_TTF = FONTS_DIR / "DejaVuSans.ttf"
 
-GENERATING_SYSTEM_VERSION = "0.5.1"
+GENERATING_SYSTEM_VERSION = "0.5.2"
 
-# Evidence table widths (sum must be 180 mm for A4 with 15 mm margins)
+# Evidence table widths (A4 with 15 mm margins -> 180 mm content width)
 # Filename, SHA-256, Ingest time, Camera ID, Duration
-EVIDENCE_COL_WIDTHS = [58*mm, 52*mm, 30*mm, 25*mm, 15*mm]  # 58+52+30+25+15 = 180
+EVIDENCE_COL_WIDTHS = [58*mm, 52*mm, 30*mm, 25*mm, 15*mm]  # = 180mm exactly
+
+# --- ELA thumbnail sizing (uniform, letterboxed) ---
+THUMB_COLS = 3
+THUMB_W_MM = 56 * mm         # image box width inside each cell
+THUMB_H_MM = 36 * mm         # image box height inside each cell
+THUMB_CELL_W_MM = 60 * mm    # 3 * 60mm = 180mm across page
+THUMB_ROW_H_MM = 40 * mm     # fixed row height for neat alignment
+
+# Letterbox pixel canvas (kept proportional to mm size; avoids distortion)
+THUMB_PX_W = 840
+THUMB_PX_H = 540
 
 # ---------------- dataclasses ----------------
 @dataclass
@@ -105,6 +116,28 @@ def _resize_fit(img_path: Path, max_w_px: int, max_h_px: int) -> Path:
     img.thumbnail((max_w_px, max_h_px))
     out = ASSETS_DIR / f"{img_path.stem}.fit_{max_w_px}x{max_h_px}.jpg"
     img.save(out, "JPEG", quality=90)
+    return out
+
+def _letterbox_thumb(img_path: Path, box_w: int, box_h: int, bg=(245, 245, 245)) -> Path:
+    """
+    Create a fixed-size thumbnail (letterboxed) preserving aspect ratio.
+    Returns the new image path.
+    """
+    img = Image.open(img_path).convert("RGB")
+    iw, ih = img.size
+    if iw == 0 or ih == 0:
+        raise ValueError("Invalid image size")
+    scale = min(box_w / iw, box_h / ih)
+    new_w, new_h = max(1, int(iw * scale)), max(1, int(ih * scale))
+    img_resized = img.resize((new_w, new_h), Image.LANCZOS)
+
+    canvas = Image.new("RGB", (box_w, box_h), bg)
+    off_x = (box_w - new_w) // 2
+    off_y = (box_h - new_h) // 2
+    canvas.paste(img_resized, (off_x, off_y))
+
+    out = ASSETS_DIR / f"{Path(img_path).stem}.thumb_{box_w}x{box_h}.jpg"
+    canvas.save(out, "JPEG", quality=90)
     return out
 
 def _qr_png_from_text(text: str, name: str) -> Path:
@@ -192,7 +225,7 @@ def _styles(primary_font: str) -> Dict[str, ParagraphStyle]:
     ss = getSampleStyleSheet()
     base = ParagraphStyle(
         "Base", parent=ss["Normal"], fontName=primary_font,
-        fontSize=9, leading=11, spaceAfter=2, wordWrap="CJK"  # allow wrap inside long tokens
+        fontSize=9, leading=11, spaceAfter=2, wordWrap="CJK"  # wrap long tokens
     )
     header = ParagraphStyle("Header", parent=base, fontSize=12, leading=14, spaceAfter=6)
     h2 = ParagraphStyle("H2", parent=base, fontSize=11, leading=13, spaceBefore=6, spaceAfter=4)
@@ -253,7 +286,6 @@ def _summarize_metadata(md: Dict[str, Any]) -> Dict[str, str]:
     out["codec"]    = "-"
     out["res"]      = "-"
     out["bitrate"]  = "-"
-    # video hints
     try:
         if "duration_sec" in det:
             out["duration"] = f"{float(det['duration_sec']):.2f}s"
@@ -363,24 +395,51 @@ def _build_story(spec: ReportSpec, st: Dict[str, ParagraphStyle], primary_font: 
         for fl in spec.forensics.tamper_flags:
             story.append(Paragraph("• " + _safe(fl, unicode_ok), st["base"]))
 
-    # ELA thumbnails
+    # ELA thumbnails (uniform letterboxed grid, fixed sizes)
     if spec.forensics.ela_thumbnails:
         story.append(Spacer(1, 2*mm))
         story.append(Paragraph("ELA thumbnails:", st["base"]))
-        thumbs: List[RLImage] = []
+
+        cells: List[RLImage] = []
         for p in spec.forensics.ela_thumbnails[:9]:
             try:
-                fit = _resize_fit(Path(p), 600, 300)
-                thumbs.append(RLImage(str(fit), width=60*mm, height=None))
+                lb = _letterbox_thumb(Path(p), THUMB_PX_W, THUMB_PX_H)
+                # exact width + height so every image is identical size
+                cells.append(RLImage(str(lb), width=THUMB_W_MM, height=THUMB_H_MM))
             except Exception:
-                pass
-        for i in range(0, len(thumbs), 3):
-            row = thumbs[i:i+3]
-            if row:
-                t = Table([row], colWidths=[60*mm]*len(row))
-                t.setStyle(TableStyle([("ALIGN",(0,0),(-1,-1),"LEFT"),("VALIGN",(0,0),(-1,-1),"MIDDLE")]))
-                story.append(t)
-                story.append(Spacer(1, 2*mm))
+                # keep grid aligned even if an image fails
+                try:
+                    ph = Image.new("RGB", (THUMB_PX_W, THUMB_PX_H), (230, 230, 230))
+                    ph_path = ASSETS_DIR / "placeholder.thumb.jpg"
+                    ph.save(ph_path)
+                    cells.append(RLImage(str(ph_path), width=THUMB_W_MM, height=THUMB_H_MM))
+                except Exception:
+                    pass
+
+        # Make rows of THUMB_COLS; pad last row with blanks to keep width stable
+        rows = []
+        for i in range(0, len(cells), THUMB_COLS):
+            row = cells[i:i+THUMB_COLS]
+            while len(row) < THUMB_COLS:
+                row.append(Spacer(THUMB_W_MM, THUMB_H_MM))
+            rows.append(row)
+
+        if rows:
+            grid = Table(
+                rows,
+                colWidths=[THUMB_CELL_W_MM] * THUMB_COLS,
+                rowHeights=[THUMB_ROW_H_MM] * len(rows),
+            )
+            grid.setStyle(TableStyle([
+                ("ALIGN", (0,0), (-1,-1), "CENTER"),
+                ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+                ("LEFTPADDING", (0,0), (-1,-1), 0),
+                ("RIGHTPADDING", (0,0), (-1,-1), 0),
+                ("TOPPADDING", (0,0), (-1,-1), 2),
+                ("BOTTOMPADDING", (0,0), (-1,-1), 2),
+            ]))
+            story.append(grid)
+            story.append(Spacer(1, 2*mm))
 
     # Deepfake heuristic
     story.append(Spacer(1, 2*mm))
@@ -410,7 +469,7 @@ def generate_report(spec: ReportSpec) -> Dict[str, Any]:
     report_id = hashlib.sha1(os.urandom(16)).hexdigest()
     generation_time_utc = datetime.now(timezone.utc).isoformat()
 
-    # JSON bundle
+    # JSON bundle (organizer-required fields)  # Problem statement format
     bundle = {
         "report_id": report_id,
         "generation_time_utc": generation_time_utc,
@@ -436,7 +495,7 @@ def generate_report(spec: ReportSpec) -> Dict[str, Any]:
     primary_font, unicode_ok = _setup_fonts()
     st = _styleset(primary_font)
 
-    # ---- PASS 1: build body to memory (no signature page yet)
+    # ---- PASS 1: body to memory (no signature page yet)
     spec1 = ReportSpec(
         header=spec.header,
         evidence=spec.evidence,
@@ -456,7 +515,7 @@ def generate_report(spec: ReportSpec) -> Dict[str, Any]:
     report_sha256 = _sha256_bytes(pdf_bytes)
     sig_info = _sign_bytes(bytes.fromhex(report_sha256))
 
-    # ---- PASS 2: rebuild fresh body + signature page to disk
+    # ---- PASS 2: body + signature page to disk
     out_pdf = REPORTS_DIR / f"{report_id}.pdf"
     doc = SimpleDocTemplate(
         str(out_pdf), pagesize=A4, leftMargin=15*mm, rightMargin=15*mm, topMargin=25*mm, bottomMargin=15*mm,

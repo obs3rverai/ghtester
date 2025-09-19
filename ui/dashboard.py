@@ -10,7 +10,7 @@ import numpy as np
 import requests
 import streamlit as st
 from PIL import Image
-
+import datetime
 # --- config ---
 API_BASE = "http://127.0.0.1:8000"
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -101,6 +101,19 @@ def api_faces_search(file_bytes: bytes, filename: str, top_k: int) -> dict:
 def api_faces_search_by_embedding(embedding: List[float], top_k: int) -> dict:
     payload = {"embedding": embedding, "top_k": int(top_k)}
     r = requests.post(f"{API_BASE}/faces/search/by-embedding", json=payload, timeout=60)
+    r.raise_for_status()
+    return r.json()
+def api_ela_by_filename(stored_name: str, jpeg_quality: int, hi_thresh: int, frame_idx: int | None) -> dict:
+    # If you used Query params on the backend, pass them as params=...
+    params = {"jpeg_quality": int(jpeg_quality), "hi_thresh": int(hi_thresh)}
+    if frame_idx is not None:
+        params["frame_idx"] = int(frame_idx)
+    r = requests.post(f"{API_BASE}/forensics/ela/by-filename/{stored_name}", params=params, timeout=120)
+    r.raise_for_status()
+    return r.json()
+
+def api_report_generate(payload: dict) -> dict:
+    r = requests.post(f"{API_BASE}/report/generate", json=payload, timeout=120)
     r.raise_for_status()
     return r.json()
 
@@ -205,9 +218,10 @@ st.markdown("---")
 # =========================
 # Tabs
 # =========================
-tab_upload, tab_forensics, tab_detect, tab_faces = st.tabs(
-    ["📤 Upload & Hash", "🧪 Forensics Metadata", "🎯 Detection", "👤 Faces (Index & Search)"]
+tab_upload, tab_forensics, tab_detect, tab_faces, tab_report = st.tabs(
+    ["📤 Upload & Hash", "🧪 Forensics Metadata", "🎯 Detection", "👤 Faces (Index & Search)", "📄 Report & ELA"]
 )
+
 
 # --------- Upload Tab ---------
 with tab_upload:
@@ -565,6 +579,199 @@ with tab_faces:
                 except Exception:
                     pass
                 st.error(f"Search failed ({e.response.status_code}). {detail or 'See server logs.'}")
+
+# --------- Report & ELA Tab ---------
+with tab_report:
+    st.subheader("Report & ELA")
+
+    # Load file list for selects
+    listing = api_forensics_files()
+    all_files: List[str] = listing.get("files", [])
+    image_exts = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+    video_exts = {".mp4", ".mov", ".mkv", ".avi"}
+    img_files = [f for f in all_files if Path(f).suffix.lower() in image_exts]
+    vid_files = [f for f in all_files if Path(f).suffix.lower() in video_exts]
+
+    # ---------- ELA Runner ----------
+    st.markdown("### ELA (Error Level Analysis)")
+    col_ela_l, col_ela_r = st.columns([2, 3])
+
+    with col_ela_l:
+        pick = st.selectbox("Stored file (image or video)", options=["-- select --"] + all_files, index=0, key="ela_pick")
+        jpeg_quality = st.slider("JPEG quality (recompress)", 10, 95, 90, 1, key="ela_q")
+        hi_thresh = st.slider("Highlight threshold (0-255)", 0, 255, 40, 1, key="ela_thr")
+        # frame for video
+        frame_idx = None
+        if pick != "-- select --" and Path(pick).suffix.lower() in video_exts:
+            frame_idx = st.number_input("Frame index for video", min_value=0, value=0, step=1, key="ela_frame")
+        run_ela_btn = st.button("Run ELA", type="primary", key="ela_run")
+
+    with col_ela_r:
+        if run_ela_btn:
+            try:
+                res = api_ela_by_filename(pick, jpeg_quality=jpeg_quality, hi_thresh=hi_thresh, frame_idx=frame_idx)
+                st.session_state["_ela_last"] = res
+                st.success("ELA generated.")
+            except requests.HTTPError as e:
+                detail = ""
+                try: detail = e.response.text
+                except Exception: pass
+                st.error(f"ELA failed ({getattr(e.response,'status_code', 'HTTP')}). {detail or ''}")
+
+        ela_res = st.session_state.get("_ela_last")
+        if ela_res:
+            st.write("**Stats:**")
+            st.json({k: v for k, v in ela_res.items() if k not in {"original_path", "ela_path"}})
+            # show original and ELA
+            def _load(path_rel: str):
+                abs_p = (PROJECT_ROOT / path_rel).resolve()
+                return Image.open(abs_p)
+            try:
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.image(_load(ela_res["original_path"]), caption="Original", use_container_width=True)
+                with c2:
+                    st.image(_load(ela_res["ela_path"]), caption="ELA heatmap", use_container_width=True)
+            except Exception as e:
+                st.warning(f"Could not preview ELA images: {e}")
+
+            # Option: add to report thumbnails list
+            if st.button("Add this ELA image to report thumbnails", key="ela_add_thumb"):
+                thumbs = st.session_state.get("_report_ela_thumbs", [])
+                thumbs.append(ela_res["ela_path"])
+                st.session_state["_report_ela_thumbs"] = thumbs
+                st.info(f"Added. Thumbs in report: {len(thumbs)}")
+
+    st.divider()
+
+    # ---------- Report Builder ----------
+    st.markdown("### Build PDF Report")
+
+    # Header
+    st.markdown("**Header**")
+    h_case_id = st.text_input("Case ID", key="rep_case_id")
+    h_investigator = st.text_input("Investigator", key="rep_investigator")
+    h_station = st.text_input("Station/Unit", key="rep_station")
+    h_contact = st.text_input("Contact", key="rep_contact")
+    h_notes = st.text_area("Case Notes", key="rep_notes")
+
+    # Evidence
+    st.markdown("**Evidence**")
+    ev_pick = st.multiselect("Select evidence files", options=all_files, default=[], key="rep_ev_pick")
+    # Build evidence rows using forensic summary for sha256/duration; ingest_time = now (demo).
+    evidence_payload: List[Dict[str, Any]] = []
+    for f in ev_pick:
+        summ = api_forensics_by_filename(f)
+        dur = None
+        det = summ.get("details", {})
+        if summ.get("kind") == "video":
+            dur = float(det.get("duration_sec", 0.0) or 0.0)
+        camera_id = st.text_input(f"Camera ID for {f}", value="unknown", key=f"rep_cam_{f}")
+        evidence_payload.append({
+            "filename": f,
+            "sha256": summ.get("sha256", ""),
+            "ingest_time": datetime.datetime.utcnow().isoformat() + "Z",  # demo; replace with real ingest if stored
+            "camera_id": camera_id,
+            "duration": dur,
+        })
+
+    # Findings (simple composer)
+    st.markdown("**Findings (optional)**")
+    st.caption("Add one or more events. Representative frame can be any stored image path (or leave blank).")
+    if "rep_findings" not in st.session_state:
+        st.session_state["rep_findings"] = []
+    if st.button("Add empty finding", key="rep_f_add"):
+        st.session_state["rep_findings"].append({
+            "time_window": "",
+            "track_id": None,
+            "object_type": "person",
+            "representative_frame_path": "",
+            "bbox": None,
+            "matched_offender_id": None,
+            "matched_offender_name": None,
+            "similarity_score": None,
+            "verification_status": "unverified",
+        })
+
+    # Render findings editor
+    new_list = []
+    for idx, f in enumerate(st.session_state["rep_findings"]):
+        st.markdown(f"**Event #{idx+1}**")
+        c1, c2 = st.columns(2)
+        with c1:
+            f["time_window"] = st.text_input("Time window", value=f.get("time_window",""), key=f"rep_f_tw_{idx}")
+            f["track_id"] = st.number_input("Track ID (optional)", min_value=0, value=int(f.get("track_id") or 0), step=1, key=f"rep_f_tid_{idx}") if f.get("track_id") is not None else None
+            f["object_type"] = st.selectbox("Object type", ["person","car","motion","object"], index=["person","car","motion","object"].index(f.get("object_type","person")), key=f"rep_f_obj_{idx}")
+            f["representative_frame_path"] = st.text_input("Representative image path (optional)", value=f.get("representative_frame_path",""), key=f"rep_f_repr_{idx}")
+        with c2:
+            f["matched_offender_id"] = st.text_input("Matched offender ID (optional)", value=f.get("matched_offender_id") or "", key=f"rep_f_oid_{idx}") or None
+            f["matched_offender_name"] = st.text_input("Matched offender Name (optional)", value=f.get("matched_offender_name") or "", key=f"rep_f_oname_{idx}") or None
+            sim = st.text_input("Similarity score (0..1, optional)", value="" if f.get("similarity_score") is None else str(f.get("similarity_score")), key=f"rep_f_sim_{idx}")
+            f["similarity_score"] = float(sim) if sim.strip() else None
+            f["verification_status"] = st.selectbox("Verification status", ["verified","unverified","unknown"], index=["verified","unverified","unknown"].index(f.get("verification_status","unverified")), key=f"rep_f_ver_{idx}")
+        # BBox (optional)
+        bx = st.text_input("BBox x,y,w,h (optional)", value=(",".join(map(str, f.get("bbox") or [])) if f.get("bbox") else ""), key=f"rep_f_bbox_{idx}")
+        if bx.strip():
+            try:
+                x,y,w,h = [int(v.strip()) for v in bx.split(",")]
+                f["bbox"] = [x,y,w,h]
+            except Exception:
+                st.warning("Invalid bbox format; expected x,y,w,h")
+                f["bbox"] = None
+        # Remove button
+        if st.button("Remove this event", key=f"rep_f_rm_{idx}"):
+            pass  # skip adding to new_list
+        else:
+            new_list.append(f)
+        st.markdown("---")
+    st.session_state["rep_findings"] = new_list
+
+    # Forensics block
+    st.markdown("**Forensics block**")
+    meta_summary = {}
+    if ev_pick:
+        # Use the first evidence file’s summary as metadata highlight (simple, you can expand later)
+        meta_summary = api_forensics_by_filename(ev_pick[0])
+
+    thumbs = st.session_state.get("_report_ela_thumbs", [])
+    st.write(f"ELA thumbnails queued: **{len(thumbs)}**")
+    deepfake = st.slider("Deepfake heuristic score (0=low..1=high; optional)", 0.0, 1.0, 0.0, 0.01, key="rep_df")
+    # Add the organizer-compatible disclaimer inline in the PDF (backend handles wording)
+
+    # Generate button
+    if st.button("Generate PDF Report", type="primary", key="rep_generate"):
+        try:
+            payload = {
+                "header": {
+                    "case_id": h_case_id,
+                    "investigator": h_investigator,
+                    "station_unit": h_station,
+                    "contact": h_contact,
+                    "case_notes": h_notes,
+                },
+                "evidence": evidence_payload,
+                "findings": st.session_state["rep_findings"],
+                "forensics": {
+                    "metadata_summary": meta_summary,
+                    "tamper_flags": [],  # You can add notes here if ELA stats looked suspicious
+                    "ela_thumbnails": thumbs,
+                    "deepfake_score": float(deepfake),
+                },
+                "bundle_json": {},  # extra fields if any
+            }
+            out = api_report_generate(payload)
+            st.success("Report generated.")
+            st.json({k: v for k,v in out.items() if k not in {"pdf_path","json_path","qr_path"}})
+            # Download links
+            def _abs(p): return str((PROJECT_ROOT / p).resolve())
+            st.markdown(f"[Download PDF]({_abs(out['pdf_path'])})")
+            st.markdown(f"[Download JSON bundle]({_abs(out['json_path'])})")
+            st.markdown(f"[QR image]({_abs(out['qr_path'])})")
+        except requests.HTTPError as e:
+            detail = ""
+            try: detail = e.response.text
+            except Exception: pass
+            st.error(f"Report generation failed ({getattr(e.response,'status_code','HTTP')}): {detail or ''}")
 
 st.markdown("---")
 st.caption("Next: PDF report export with hashes & snapshots, and basic tamper checks (ELA).")

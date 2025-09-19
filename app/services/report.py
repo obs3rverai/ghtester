@@ -12,7 +12,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from fpdf import FPDF
 from PIL import Image
-
 import qrcode
 
 # crypto (self-signed cert + signing)
@@ -27,6 +26,8 @@ DATA_DIR = PROJECT_ROOT / "data"
 REPORTS_DIR = DATA_DIR / "reports"
 ASSETS_DIR = REPORTS_DIR / "assets"
 KEYS_DIR = DATA_DIR / "keys"
+FONTS_DIR = DATA_DIR / "fonts"
+DEJAVU_TTF = FONTS_DIR / "DejaVuSans.ttf"
 
 GENERATING_SYSTEM_VERSION = "0.5.0"  # bump if needed
 
@@ -53,12 +54,10 @@ class FindingItem:
 
 @dataclass
 class ForensicBlock:
-    # short metadata summaries (e.g., EXIF core, ffprobe highlights)
-    metadata_summary: Dict[str, Any]
-    # light ELA heuristics + links to ELA images (created by ela.py)
-    tamper_flags: List[str]
-    ela_thumbnails: List[str]  # list of image paths to include
-    deepfake_score: Optional[float]  # heuristic; show disclaimer
+    metadata_summary: Dict[str, Any]   # EXIF/ffprobe highlights
+    tamper_flags: List[str]            # short notes
+    ela_thumbnails: List[str]          # paths to ELA images to embed
+    deepfake_score: Optional[float]    # heuristic; disclaimer shown in PDF
 
 @dataclass
 class ReportHeader:
@@ -74,14 +73,14 @@ class ReportSpec:
     evidence: List[EvidenceItem]
     findings: List[FindingItem]
     forensics: ForensicBlock
-    # optional: embed a JSON bundle (path) into QR (we always write one)
-    bundle_json: Dict[str, Any]
+    bundle_json: Dict[str, Any]  # extra machine-readable fields
 
 # --------------- utils ---------------
 def _ensure_dirs() -> None:
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     ASSETS_DIR.mkdir(parents=True, exist_ok=True)
     KEYS_DIR.mkdir(parents=True, exist_ok=True)
+    FONTS_DIR.mkdir(parents=True, exist_ok=True)
 
 def _sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
@@ -106,6 +105,44 @@ def _qr_png_from_text(text: str, name: str) -> Path:
     out = ASSETS_DIR / f"{name}.qr.png"
     img.save(out)
     return out
+
+# ---------- text safety for fonts ----------
+def _sanitize_latin1(s: str) -> str:
+    """
+    Replace common Unicode punctuation with ASCII fallbacks, then
+    map anything still outside Latin-1 to '?' (so core fonts won't crash).
+    """
+    if s is None:
+        return ""
+    replacements = {
+        "—": "-", "–": "-", "―": "-",  # dashes
+        "“": '"', "”": '"', "„": '"', "‟": '"',
+        "‘": "'", "’": "'", "‚": "'", "‛": "'",
+        "•": "*", "…": "...",
+        "×": "x",
+    }
+    for k, v in replacements.items():
+        s = s.replace(k, v)
+    return s.encode("latin-1", errors="replace").decode("latin-1")
+
+def _safe_text(s: str, unicode_ok: bool) -> str:
+    return s if unicode_ok else _sanitize_latin1(s or "")
+
+def _fit_cell_text(pdf: FPDF, s: str, max_w_mm: float, unicode_ok: bool, ellipsis: str = "…") -> str:
+    """
+    Ensure the text fits into a single-cell width by truncating with ellipsis.
+    Uses fpdf2's current font metrics via get_string_width().
+    """
+    s = _safe_text(s or "", unicode_ok)
+    # small inner padding so we don't sit right on the border
+    pad = 2.0
+    if pdf.get_string_width(s) <= max(0.0, max_w_mm - pad):
+        return s
+    # iteratively trim
+    base = s
+    while base and pdf.get_string_width(base + ellipsis) > max(0.0, max_w_mm - pad):
+        base = base[:-1]
+    return (base + ellipsis) if base else ellipsis
 
 # --------------- self-signed cert for demo signing ---------------
 def _cert_files() -> Tuple[Path, Path]:
@@ -165,10 +202,8 @@ def _sign_bytes(data: bytes) -> Dict[str, str]:
     )
     sig_b64 = base64.b64encode(sig).decode("ascii")
 
-    # subject for report
     subj = cert.subject.rfc4514_string()
 
-    # pubkey fingerprint (SHA256 of DER SubjectPublicKeyInfo)
     spki = cert.public_key().public_bytes(
         serialization.Encoding.DER,
         serialization.PublicFormat.SubjectPublicKeyInfo,
@@ -183,11 +218,29 @@ def _sign_bytes(data: bytes) -> Dict[str, str]:
 
 # --------------- PDF builder ---------------
 class _PDF(FPDF):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._unicode_font_loaded = False
+
+    def load_unicode_font(self):
+        """Try to register and select DejaVuSans for Unicode support."""
+        if DEJAVU_TTF.exists():
+            self.add_font("DejaVu", "", str(DEJAVU_TTF), uni=True)
+            self.add_font("DejaVu", "B", str(DEJAVU_TTF), uni=True)  # bold maps to same file
+            self.set_font("DejaVu", "", 10)
+            self._unicode_font_loaded = True
+        else:
+            self.set_font("Helvetica", "", 10)
+            self._unicode_font_loaded = False
+
     def header(self):
+        # Keep ASCII here so it renders even without Unicode font
+        title = "AI CCTV & Digital Media Forensic Report"
+        subtitle = "For hackathon demonstration - not a legal forensic document"
         self.set_font("Helvetica", "B", 12)
-        self.cell(0, 8, "AI CCTV & Digital Media Forensic Report", ln=1, align="C")
+        self.cell(0, 8, title, ln=1, align="C")
         self.set_font("Helvetica", "", 9)
-        self.cell(0, 6, "For hackathon demonstration — not a legal forensic document", ln=1, align="C")
+        self.cell(0, 6, subtitle, ln=1, align="C")
         self.ln(2)
         self.set_draw_color(180, 180, 180)
         self.line(10, self.get_y(), 200, self.get_y())
@@ -198,21 +251,27 @@ class _PDF(FPDF):
         self.set_font("Helvetica", "I", 8)
         self.cell(0, 8, f"Page {self.page_no()}", align="C")
 
-def _kv(pdf: _PDF, k: str, v: str, k_w: int = 45):
-    pdf.set_font("Helvetica", "B", 10); pdf.cell(k_w, 6, f"{k}:")
-    pdf.set_font("Helvetica", "", 10); pdf.multi_cell(0, 6, v)
+def _kv(pdf: _PDF, k: str, v: str, unicode_ok: bool, k_w: int = 45):
+    pdf.set_font(("DejaVu" if pdf._unicode_font_loaded else "Helvetica"), "B", 10)
+    pdf.cell(k_w, 6, _safe_text(k, unicode_ok))
+    pdf.set_font(("DejaVu" if pdf._unicode_font_loaded else "Helvetica"), "", 10)
+    pdf.multi_cell(0, 6, _safe_text(v, unicode_ok))
 
-def _add_table_header(pdf: _PDF, headers: List[str], widths: List[int]):
-    pdf.set_font("Helvetica", "B", 9)
+def _add_table_header(pdf: _PDF, headers: List[str], widths: List[int], unicode_ok: bool):
+    pdf.set_font(("DejaVu" if pdf._unicode_font_loaded else "Helvetica"), "B", 9)
     for h, w in zip(headers, widths):
-        pdf.cell(w, 7, h, border=1, align="C")
+        txt = _fit_cell_text(pdf, h, float(w), unicode_ok)
+        pdf.cell(w, 7, txt, border=1, align="C")
     pdf.ln(7)
-    pdf.set_font("Helvetica", "", 9)
+    pdf.set_font(("DejaVu" if pdf._unicode_font_loaded else "Helvetica"), "", 9)
 
-def _add_table_row(pdf: _PDF, row: List[str], widths: List[int]):
+
+def _add_table_row(pdf: _PDF, row: List[str], widths: List[int], unicode_ok: bool):
     for c, w in zip(row, widths):
-        pdf.cell(w, 6, c, border=1)
+        txt = _fit_cell_text(pdf, c, float(w), unicode_ok)
+        pdf.cell(w, 6, txt, border=1)
     pdf.ln(6)
+
 
 # --------------- public API ---------------
 def generate_report(spec: ReportSpec) -> Dict[str, Any]:
@@ -226,7 +285,7 @@ def generate_report(spec: ReportSpec) -> Dict[str, Any]:
     report_id = hashlib.sha1(os.urandom(16)).hexdigest()  # okay for demo
     generation_time_utc = datetime.now(timezone.utc).isoformat()
 
-    # ---- JSON bundle (what the QR points to / mirrors) ----
+    # ---- JSON bundle (QR points to this local path in demo) ----
     bundle = {
         "report_id": report_id,
         "generation_time_utc": generation_time_utc,
@@ -236,7 +295,6 @@ def generate_report(spec: ReportSpec) -> Dict[str, Any]:
         "findings": [asdict(f) for f in spec.findings],
         "forensics": asdict(spec.forensics),
     }
-    # Merge additional payload user passed (if any)
     try:
         bundle.update(spec.bundle_json or {})
     except Exception:
@@ -255,24 +313,25 @@ def generate_report(spec: ReportSpec) -> Dict[str, Any]:
     pdf.set_title(f"Report {report_id}")
     pdf.set_author(spec.header.investigator or "unknown")
     pdf.add_page()
+    pdf.load_unicode_font()
+    unicode_ok = pdf._unicode_font_loaded
 
     # ---- Header (Case / Investigator) ----
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 7, "Case Header", ln=1)
-    _kv(pdf, "Report ID", report_id)
-    _kv(pdf, "Generated (UTC)", generation_time_utc)
-    _kv(pdf, "System Version", GENERATING_SYSTEM_VERSION)
+    pdf.set_font(("DejaVu" if unicode_ok else "Helvetica"), "B", 11)
+    pdf.cell(0, 7, _safe_text("Case Header", unicode_ok), ln=1)
+    _kv(pdf, "Report ID", report_id, unicode_ok)
+    _kv(pdf, "Generated (UTC)", generation_time_utc, unicode_ok)
+    _kv(pdf, "System Version", GENERATING_SYSTEM_VERSION, unicode_ok)
 
     pdf.ln(2)
-    _kv(pdf, "Case ID", spec.header.case_id)
-    _kv(pdf, "Investigator", spec.header.investigator)
-    _kv(pdf, "Station/Unit", spec.header.station_unit)
-    _kv(pdf, "Contact", spec.header.contact)
+    _kv(pdf, "Case ID", spec.header.case_id, unicode_ok)
+    _kv(pdf, "Investigator", spec.header.investigator, unicode_ok)
+    _kv(pdf, "Station/Unit", spec.header.station_unit, unicode_ok)
+    _kv(pdf, "Contact", spec.header.contact, unicode_ok)
+    if (spec.header.case_notes or "").strip():
+        _kv(pdf, "Case Notes", spec.header.case_notes, unicode_ok)
 
-    if spec.header.case_notes.strip():
-        _kv(pdf, "Case Notes", spec.header.case_notes)
-
-    # QR code on the right
+    # QR on the right
     y_now = pdf.get_y()
     x_qr = 155
     try:
@@ -286,49 +345,49 @@ def generate_report(spec: ReportSpec) -> Dict[str, Any]:
     pdf.line(10, pdf.get_y(), 200, pdf.get_y())
     pdf.ln(4)
 
-    # ---- Evidence list table ----
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 7, "Evidence List", ln=1)
+    # ---- Evidence table ----
+    pdf.set_font(("DejaVu" if unicode_ok else "Helvetica"), "B", 11)
+    pdf.cell(0, 7, _safe_text("Evidence List", unicode_ok), ln=1)
     headers = ["Filename", "SHA-256", "Ingest time", "Camera ID", "Duration (s)"]
     widths = [45, 65, 35, 25, 20]
-    _add_table_header(pdf, headers, widths)
+    _add_table_header(pdf, headers, widths, unicode_ok)
     for e in spec.evidence:
         _add_table_row(pdf, [
             e.filename,
             (e.sha256[:10] + "…"),
             e.ingest_time,
-            e.camera_id or "unknown",
-            f"{e.duration:.1f}" if e.duration else "-",
-        ], widths)
+            (e.camera_id or "unknown"),
+            (f"{e.duration:.1f}" if e.duration else "-"),
+        ], widths, unicode_ok)
 
     pdf.ln(3)
 
     # ---- Findings ----
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 7, "Findings", ln=1)
+    pdf.set_font(("DejaVu" if unicode_ok else "Helvetica"), "B", 11)
+    pdf.cell(0, 7, _safe_text("Findings", unicode_ok), ln=1)
     if not spec.findings:
-        pdf.set_font("Helvetica", "", 10)
-        pdf.multi_cell(0, 6, "No detection/face findings selected.")
+        pdf.set_font(("DejaVu" if unicode_ok else "Helvetica"), "", 10)
+        pdf.multi_cell(0, 6, _safe_text("No detection/face findings selected.", unicode_ok))
     else:
         for idx, f in enumerate(spec.findings, 1):
-            pdf.set_font("Helvetica", "B", 10)
-            pdf.cell(0, 6, f"Event #{idx}", ln=1)
-            pdf.set_font("Helvetica", "", 10)
-            _kv(pdf, "Time window", f.time_window)
-            _kv(pdf, "Track ID", str(f.track_id) if f.track_id is not None else "-")
-            _kv(pdf, "Object type", f.object_type)
-            _kv(pdf, "BBox (x,y,w,h)", str(f.bbox) if f.bbox else "-")
-            _kv(pdf, "Matched offender (ID)", f.matched_offender_id or "-")
-            _kv(pdf, "Matched offender (Name)", f.matched_offender_name or "-")
-            _kv(pdf, "Similarity score", f"{f.similarity_score:.3f}" if f.similarity_score is not None else "-")
-            _kv(pdf, "Verification status", f.verification_status or "unknown")
+            pdf.set_font(("DejaVu" if unicode_ok else "Helvetica"), "B", 10)
+            pdf.cell(0, 6, _safe_text(f"Event #{idx}", unicode_ok), ln=1)
+            pdf.set_font(("DejaVu" if unicode_ok else "Helvetica"), "", 10)
+            _kv(pdf, "Time window", f.time_window, unicode_ok)
+            _kv(pdf, "Track ID", (str(f.track_id) if f.track_id is not None else "-"), unicode_ok)
+            _kv(pdf, "Object type", f.object_type, unicode_ok)
+            _kv(pdf, "BBox (x,y,w,h)", (str(f.bbox) if f.bbox else "-"), unicode_ok)
+            _kv(pdf, "Matched offender (ID)", (f.matched_offender_id or "-"), unicode_ok)
+            _kv(pdf, "Matched offender (Name)", (f.matched_offender_name or "-"), unicode_ok)
+            _kv(pdf, "Similarity score", (f"{f.similarity_score:.3f}" if f.similarity_score is not None else "-"), unicode_ok)
+            _kv(pdf, "Verification status", (f.verification_status or "unknown"), unicode_ok)
             # representative image (fit)
             if f.representative_frame_path:
                 try:
                     fit = _resize_fit(Path(f.representative_frame_path), 170, 80)
                     pdf.image(str(fit), w=170)
                 except Exception:
-                    pdf.multi_cell(0, 6, f"(Could not render image: {f.representative_frame_path})")
+                    pdf.multi_cell(0, 6, _safe_text(f"(Could not render image: {f.representative_frame_path})", unicode_ok))
             pdf.ln(2)
 
     pdf.ln(2)
@@ -337,30 +396,30 @@ def generate_report(spec: ReportSpec) -> Dict[str, Any]:
     pdf.ln(4)
 
     # ---- Forensics (metadata + ELA + deepfake heuristic) ----
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 7, "Forensics Summary", ln=1)
+    pdf.set_font(("DejaVu" if unicode_ok else "Helvetica"), "B", 11)
+    pdf.cell(0, 7, _safe_text("Forensics Summary", unicode_ok), ln=1)
 
     # metadata highlights
-    pdf.set_font("Helvetica", "", 10)
+    pdf.set_font(("DejaVu" if unicode_ok else "Helvetica"), "", 10)
     meta_txt = json.dumps(spec.forensics.metadata_summary, ensure_ascii=False, indent=2)
-    pdf.multi_cell(0, 5, meta_txt[:1800] + (" …(truncated)" if len(meta_txt) > 1800 else ""))
+    meta_body = meta_txt[:1800] + (" …(truncated)" if len(meta_txt) > 1800 else "")
+    pdf.multi_cell(0, 5, _safe_text(meta_body, unicode_ok))
 
     # tamper flags
     if spec.forensics.tamper_flags:
         pdf.ln(2)
-        pdf.set_font("Helvetica", "B", 10)
-        pdf.cell(0, 6, "Tamper checks:", ln=1)
-        pdf.set_font("Helvetica", "", 10)
+        pdf.set_font(("DejaVu" if unicode_ok else "Helvetica"), "B", 10)
+        pdf.cell(0, 6, _safe_text("Tamper checks:", unicode_ok), ln=1)
+        pdf.set_font(("DejaVu" if unicode_ok else "Helvetica"), "", 10)
         for flag in spec.forensics.tamper_flags:
-            pdf.multi_cell(0, 5, f"• {flag}")
+            pdf.multi_cell(0, 5, _safe_text(f"• {flag}", unicode_ok))
 
-    # ELA thumbs
+    # ELA thumbnails grid
     if spec.forensics.ela_thumbnails:
         pdf.ln(2)
-        pdf.set_font("Helvetica", "B", 10)
-        pdf.cell(0, 6, "ELA thumbnails:", ln=1)
-        pdf.set_font("Helvetica", "", 10)
-        # place up to 3 per row
+        pdf.set_font(("DejaVu" if unicode_ok else "Helvetica"), "B", 10)
+        pdf.cell(0, 6, _safe_text("ELA thumbnails:", unicode_ok), ln=1)
+        pdf.set_font(("DejaVu" if unicode_ok else "Helvetica"), "", 10)
         max_w = 60
         x0, y0 = pdf.get_x(), pdf.get_y()
         x, y = x0, y0
@@ -371,7 +430,7 @@ def generate_report(spec: ReportSpec) -> Dict[str, Any]:
                 fit = _resize_fit(Path(p), max_w, 60)
                 pdf.image(str(fit), x=x, y=y, w=max_w)
             except Exception:
-                pdf.text(x, y + 5, f"(img fail: {p})")
+                pdf.text(x, y + 5, _safe_text(f"(img fail: {p})", unicode_ok))
             i += 1
             if i % per_row == 0:
                 y += 62
@@ -382,14 +441,20 @@ def generate_report(spec: ReportSpec) -> Dict[str, Any]:
 
     # deepfake heuristic (with clear disclaimer)
     pdf.ln(2)
-    pdf.set_font("Helvetica", "B", 10)
-    pdf.cell(0, 6, "Deepfake heuristic score (experimental):", ln=1)
-    pdf.set_font("Helvetica", "", 10)
+    pdf.set_font(("DejaVu" if unicode_ok else "Helvetica"), "B", 10)
+    pdf.cell(0, 6, _safe_text("Deepfake heuristic score (experimental):", unicode_ok), ln=1)
+    pdf.set_font(("DejaVu" if unicode_ok else "Helvetica"), "", 10)
     if spec.forensics.deepfake_score is None:
-        pdf.multi_cell(0, 5, "N/A")
+        pdf.multi_cell(0, 5, _safe_text("N/A", unicode_ok))
     else:
-        pdf.multi_cell(0, 5, f"{spec.forensics.deepfake_score:.2f} (0=low suspicion .. 1=high suspicion) — "
-                             f"heuristic only; NOT a definitive detector.")
+        pdf.multi_cell(
+            0, 5,
+            _safe_text(
+                f"{spec.forensics.deepfake_score:.2f} (0=low suspicion .. 1=high suspicion) - "
+                "heuristic only; NOT a definitive detector.",
+                unicode_ok
+            )
+        )
 
     pdf.ln(3)
     pdf.set_draw_color(200, 200, 200)
@@ -397,10 +462,10 @@ def generate_report(spec: ReportSpec) -> Dict[str, Any]:
     pdf.ln(4)
 
     # ---- Signatures (hash + signature + cert info) ----
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 7, "Signatures", ln=1)
-    pdf.set_font("Helvetica", "", 10)
-    pdf.multi_cell(0, 5, "The following fields allow integrity verification of this PDF in demo mode.")
+    pdf.set_font(("DejaVu" if unicode_ok else "Helvetica"), "B", 11)
+    pdf.cell(0, 7, _safe_text("Signatures", unicode_ok), ln=1)
+    pdf.set_font(("DejaVu" if unicode_ok else "Helvetica"), "", 10)
+    pdf.multi_cell(0, 5, _safe_text("The following fields allow integrity verification of this PDF in demo mode.", unicode_ok))
 
     # Temporarily output PDF to bytes to hash and sign
     tmp_pdf = REPORTS_DIR / f"{report_id}.tmp.pdf"
@@ -413,10 +478,10 @@ def generate_report(spec: ReportSpec) -> Dict[str, Any]:
     signing_cert_subject = sig_info["signing_cert_subject"]
     signing_cert_pubkey_fingerprint = sig_info["signing_cert_pubkey_fingerprint"]
 
-    _kv(pdf, "report_sha256", report_sha256)
-    _kv(pdf, "signature (base64)", signature_b64[:96] + "…")
-    _kv(pdf, "signing_cert_subject", signing_cert_subject)
-    _kv(pdf, "signing_cert_pubkey_fingerprint", signing_cert_pubkey_fingerprint)
+    _kv(pdf, "report_sha256", report_sha256, unicode_ok)
+    _kv(pdf, "signature (base64)", signature_b64[:96] + "…", unicode_ok)
+    _kv(pdf, "signing_cert_subject", signing_cert_subject, unicode_ok)
+    _kv(pdf, "signing_cert_pubkey_fingerprint", signing_cert_pubkey_fingerprint, unicode_ok)
 
     # Final write
     out_pdf = REPORTS_DIR / f"{report_id}.pdf"

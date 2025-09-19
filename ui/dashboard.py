@@ -11,6 +11,28 @@ import requests
 import streamlit as st
 from PIL import Image
 import datetime
+# from ui.tabs.detect_track_tab import render as render_detect_track
+# --- robust import for the Detect & Track tab ---
+# Works whether we run `streamlit run ui/dashboard.py` (root) or `streamlit run dashboard.py` (inside ui/)
+try:
+    # case: running from repo root
+    from ui.tabs.detect_track_tab import render as render_detect_track  # type: ignore
+except ModuleNotFoundError:
+    try:
+        # case: running from inside ui/ so 'ui' isn't a visible package
+        import sys
+        from pathlib import Path as _Path
+        _HERE = _Path(__file__).resolve()
+        # Ensure project root is on path (…/ghtest)
+        sys.path.insert(0, str(_HERE.parents[1]))
+        # Now import as tabs.detect_track_tab
+        from tabs.detect_track_tab import render as render_detect_track  # type: ignore
+    except ModuleNotFoundError:
+        # graceful fallback if the tab file isn't present yet
+        import streamlit as _st
+        def render_detect_track():
+            _st.info("Detection & Tracking tab not available (missing ui/tabs/detect_track_tab.py).")
+
 # --- config ---
 API_BASE = "http://127.0.0.1:8000"
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -775,3 +797,44 @@ with tab_report:
 
 st.markdown("---")
 st.caption("Next: PDF report export with hashes & snapshots, and basic tamper checks (ELA).")
+
+# =========================
+# NEW: Advanced tabs (non-breaking additions)
+# =========================
+st.markdown("### Advanced")
+adv_tab1, adv_tab2 = st.tabs(["🎯 Detection & Tracking (YOLO)", "🔒 Verify Report (PDF)"])
+
+# 1) YOLO Detection & Tracking (full tab implemented in ui/tabs/detect_track_tab.py)
+with adv_tab1:
+    render_detect_track()
+
+# 2) Verify Report (PDF) — local hash preview; backend verify endpoints will be added next
+with adv_tab2:
+    st.caption("Upload a generated PDF to compute its SHA-256 locally. Full signature & bundle verification will appear here after we add the backend verifier.")
+    up_pdf = st.file_uploader("Select report PDF", type=["pdf"], key="verify_pdf_up")
+    if up_pdf is not None:
+        import hashlib, io
+        data = up_pdf.getvalue()
+        sha256 = hashlib.sha256(data).hexdigest()
+        st.text_input("Computed SHA-256 (local)", value=sha256, label_visibility="visible")
+        st.info("Compare this with the `report_sha256` shown on the report’s Signatures page. (Automated verification coming next.)")
+
+# --- Verify Report (PDF) tab (added without touching existing UI) ---
+st.markdown("---")
+st.subheader("🔒 Verify Report (PDF)")
+try:
+    from ui.tabs.verify_tab import render as render_verify
+except ModuleNotFoundError:
+    # also allow running from inside ui/
+    import sys
+    from pathlib import Path as _Path
+    _HERE = _Path(__file__).resolve()
+    sys.path.insert(0, str(_HERE.parent))              # ui/
+    sys.path.insert(0, str(_HERE.parent.parent))       # repo root
+    try:
+        from tabs.verify_tab import render as render_verify
+    except ModuleNotFoundError:
+        def render_verify():
+            st.info("Verify tab not available (missing ui/tabs/verify_tab.py).")
+
+render_verify()

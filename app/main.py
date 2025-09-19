@@ -19,6 +19,8 @@ from app.services.report import (
     EvidenceItem, FindingItem, ForensicBlock, ReportHeader, ReportSpec,
     generate_report, REPORTS_DIR, ASSETS_DIR,
 )
+# app/main.py  (add these lines)
+
 
 # --- simple config ---
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -31,6 +33,10 @@ app = FastAPI(title="AI CCTV & Digital Media Forensic Tool (MVP)", version="0.5.
 from app.services.metadata import summarize_forensics, is_video, is_image  # noqa: E402
 from app.services.detection import analyze_video_with_motion_stub  # noqa: E402
 from app.services.faces import faces_from_image, faces_from_video  # noqa: E402
+from app.api.detect_track import router as detect_track_router
+app.include_router(detect_track_router)
+from app.api.verify import router as verify_router
+app.include_router(verify_router)
 
 # Try to import YOLO service (optional)
 try:

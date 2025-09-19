@@ -4,3 +4,6 @@ __pycache__/
 app/__pycache__/main.cpython-312.pyc
 *.pem
 /data/reports/*
+app/__pycache__/main.cpython-312.pyc
+*mp4
+data/annotated/cc65a963-5887-4438-af67-fbec6d9a807a_Corporate_1.det.mp4

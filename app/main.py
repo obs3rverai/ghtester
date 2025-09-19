@@ -270,6 +270,11 @@ class FaceIndexAddParams(BaseModel):
     max_frames: Optional[int] = Field(100, ge=1)
     max_faces: int = Field(1000, ge=1, le=10000)
 
+# --- New model for embedding-based search ---
+class EmbeddingSearchRequest(BaseModel):
+    embedding: List[float]   # L2-normalized ArcFace embedding (usually 512-D)
+    top_k: int = 5
+
 @app.post("/faces/index/add/by-filename/{stored_name}")
 def faces_index_add_by_filename(stored_name: str, params: FaceIndexAddParams):
     """
@@ -312,6 +317,42 @@ def _cosine_sim_matrix(q: np.ndarray, M: np.ndarray) -> np.ndarray:
     Mn = M / (np.linalg.norm(M, axis=1, keepdims=True) + 1e-12)
     return (Mn @ qn)
 
+@app.post("/faces/search/by-embedding")
+def faces_search_by_embedding(req: EmbeddingSearchRequest):
+    """
+    Search the in-memory face index using a precomputed face embedding.
+    This bypasses re-detection — ideal for 'Use this detected face as query'.
+    """
+    if len(_FACE_DB) == 0:
+        raise HTTPException(status_code=400, detail="Face index is empty. Add faces first.")
+
+    # ensure numpy vector & normalize for cosine
+    q = np.asarray(req.embedding, dtype=np.float32)
+    if q.ndim != 1 or q.size == 0:
+        raise HTTPException(status_code=400, detail="Invalid embedding shape.")
+    q = q / (np.linalg.norm(q) + 1e-12)
+
+    # Stack index embeddings (already L2-normalized during indexing)
+    M = np.vstack([item["embedding"] for item in _FACE_DB])  # (N, D)
+    sims = (M @ q)  # cosine similarity (N,)
+
+    k = int(max(1, min(int(req.top_k), sims.shape[0])))
+    top_idx = np.argsort(-sims)[:k]
+
+    results = []
+    for i in top_idx:
+        item = _FACE_DB[int(i)]
+        results.append({
+            "score": float(sims[int(i)]),
+            "source_file": item["source_file"],
+            "bbox": item["bbox"],
+            "frame_idx": item["frame_idx"],
+            "ts_sec": item["ts_sec"],
+        })
+
+    return {"top_k": k, "results": results}
+
+
 @app.post("/faces/search")
 async def faces_search(
     file: UploadFile = File(...),
@@ -320,7 +361,9 @@ async def faces_search(
     """
     Upload a query face image (single face recommended). We detect faces,
     take the *largest* face embedding as query, and cosine-search the in-memory index.
-    If no face is found at first, we retry with a more lenient detector configuration.
+    If no face is found, we retry with:
+      1) lenient detector settings
+      2) padded + enhanced image + lenient detector
     """
     if len(_FACE_DB) == 0:
         raise HTTPException(status_code=400, detail="Face index is empty. Add faces first via /faces/index/add/by-filename/...")
@@ -329,30 +372,30 @@ async def faces_search(
     if not raw:
         raise HTTPException(status_code=400, detail="Empty upload.")
 
-    # Save to a temp path inside uploads (optional for debugging)
+    # Save to uploads (debug)
     media_id = str(uuid.uuid4())
     safe_name = file.filename.replace("/", "_").replace("\\", "_") or "query.jpg"
     tmp_path = UPLOAD_DIR / f"{media_id}_{safe_name}"
     with open(tmp_path, "wb") as out:
         out.write(raw)
 
-    # Query must be an image file
+    # Must be an image
     if not is_image(tmp_path):
         raise HTTPException(status_code=400, detail="Query must be an image file.")
 
-    # --- Try 1: normal settings (strict) ---
+    # ---------- Try 1: normal pipeline ----------
     qres = faces_from_image(tmp_path)
     faces = qres.get("faces", [])
 
-    # --- Try 2: lenient settings (bigger det_size, allow tiny/soft faces, strong upscale) ---
+    # ---------- Try 2: lenient pipeline ----------
     if not faces:
         try:
-            from app.services.faces import FaceEngine  # use same implementation with relaxed thresholds
+            from app.services.faces import FaceEngine
             fe_lenient = FaceEngine(
                 providers=None,
                 det_size=1280,
-                min_face_size=10,         # accept small crops
-                min_sharpness=0.0,        # accept soft crops
+                min_face_size=10,
+                min_sharpness=0.0,
                 pre_upscale_if_below_height=4096,
                 pre_upscale_factor=2.0
             )
@@ -361,21 +404,79 @@ async def faces_search(
         except Exception:
             faces = []
 
+    # ---------- Try 3: pad + enhance + lenient pipeline ----------
     if not faces:
-        raise HTTPException(status_code=400, detail="No face detected in query image (even after lenient retry).")
+        try:
+            import cv2
+            import numpy as np
+            from app.services.faces import FaceEngine
 
-    # pick largest bbox face
+            img = cv2.imread(str(tmp_path))
+            if img is None or img.size == 0:
+                raise RuntimeError("Could not read query image.")
+
+            H, W = img.shape[:2]
+            # a) Unsharp mask (light)
+            blur = cv2.GaussianBlur(img, (0, 0), sigmaX=1.0)
+            sharp = cv2.addWeighted(img, 1.5, blur, -0.5, 0)
+
+            # b) CLAHE on L-channel (LAB)
+            lab = cv2.cvtColor(sharp, cv2.COLOR_BGR2LAB)
+            L, A, B = cv2.split(lab)
+            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+            L2 = clahe.apply(L)
+            lab2 = cv2.merge([L2, A, B])
+            enh = cv2.cvtColor(lab2, cv2.COLOR_LAB2BGR)
+
+            # c) Add 30% replicate padding around (helps very tight crops)
+            top = bottom = int(0.30 * H)
+            left = right = int(0.30 * W)
+            padded = cv2.copyMakeBorder(enh, top, bottom, left, right, cv2.BORDER_REPLICATE)
+
+            # d) Upscale small inputs
+            short_side = min(padded.shape[:2])
+            if short_side < 400:
+                scale = 400.0 / max(1.0, short_side)
+                padded = cv2.resize(padded, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+
+            # write a temp padded copy
+            padded_path = UPLOAD_DIR / f"{media_id}_padded_{safe_name}"
+            cv2.imwrite(str(padded_path), padded)
+
+            fe_pad = FaceEngine(
+                providers=None,
+                det_size=1280,
+                min_face_size=8,
+                min_sharpness=0.0,
+                pre_upscale_if_below_height=4096,
+                pre_upscale_factor=2.0
+            )
+            qres3 = fe_pad.extract_from_image(padded_path)
+            faces_pad = qres3.get("faces", [])
+
+            # If we detected on the padded image, just use the largest face's embedding
+            if faces_pad:
+                faces = faces_pad
+        except Exception:
+            pass
+
+    if not faces:
+        raise HTTPException(status_code=400, detail="No face detected in query image (after padded+enhanced retry).")
+
+    # pick largest face by area
     def area(bb):
         x, y, w, h = bb
         return int(w) * int(h)
     faces_sorted = sorted(faces, key=lambda f: area(f["bbox"]), reverse=True)
+
+    # Embedding
     q_emb = _emb_from_face_dict(faces_sorted[0])
 
-    # Prepare matrix & cosine sim
+    # Cosine search
     M = np.vstack([item["embedding"] for item in _FACE_DB])  # (N,D)
-    sims = _cosine_sim_matrix(q_emb, M)  # (N,)
+    qn = q_emb / (np.linalg.norm(q_emb) + 1e-12)
+    sims = (M @ qn)
 
-    # Top-k
     k = int(max(1, min(top_k, sims.shape[0])))
     top_idx = np.argsort(-sims)[:k]
 

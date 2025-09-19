@@ -6,3 +6,5 @@ aiofiles
 pillow
 numpy
 streamlit
+opencv-python
+insightface

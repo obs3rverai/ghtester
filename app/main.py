@@ -2,12 +2,23 @@
 import hashlib
 import uuid
 from pathlib import Path
-from typing import Dict, Optional, Literal, List
+from typing import Dict, Optional, Literal, List, Any
 
 import numpy as np
 from fastapi import FastAPI, UploadFile, File, HTTPException, Form
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, validator
+# FastAPI / Pydantic
+from fastapi import Body, Query
+from pydantic import BaseModel  # if not already imported
+from typing import Optional     # if not already imported
+
+# --- ADD: ELA + Report services ---
+from app.services.ela import run_ela_on_image, run_ela_on_video_frame
+from app.services.report import (
+    EvidenceItem, FindingItem, ForensicBlock, ReportHeader, ReportSpec,
+    generate_report, REPORTS_DIR, ASSETS_DIR,
+)
 
 # --- simple config ---
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -497,3 +508,146 @@ async def faces_search(
         "top_k": k,
         "results": results
     }
+
+# ---------- Forensics: ELA (image or single video frame) ----------
+@app.post("/forensics/ela/by-filename/{stored_name}")
+def forensics_ela_by_filename(
+    stored_name: str,
+    jpeg_quality: int = Query(90, ge=10, le=95),
+    hi_thresh: int = Query(40, ge=0, le=255),
+    frame_idx: Optional[int] = Query(None, ge=0),
+):
+    """
+    Run Error Level Analysis (ELA).
+    - Images: run directly.
+    - Videos: provide frame_idx to extract that frame first.
+    Returns ELA stats and the path to the ELA PNG under data/reports/assets/.
+    """
+    src_path = (UPLOAD_DIR / stored_name).resolve()
+    if not src_path.exists():
+        raise HTTPException(status_code=404, detail=f"Stored file not found: {stored_name}")
+
+    ASSETS_DIR.mkdir(parents=True, exist_ok=True)
+
+    suffix = src_path.suffix.lower()
+    is_image = suffix in {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+    is_video = suffix in {".mp4", ".mov", ".mkv", ".avi"}
+
+    try:
+        if is_image:
+            res = run_ela_on_image(src_path, out_dir=ASSETS_DIR, jpeg_quality=int(jpeg_quality), hi_thresh=int(hi_thresh))
+        elif is_video:
+            if frame_idx is None:
+                raise HTTPException(status_code=400, detail="For videos, provide frame_idx.")
+            res = run_ela_on_video_frame(src_path, frame_idx=int(frame_idx), out_dir=ASSETS_DIR,
+                                         jpeg_quality=int(jpeg_quality), hi_thresh=int(hi_thresh))
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported file type for ELA.")
+
+        # Return paths relative to project root for the UI
+        def rel(p: str) -> str:
+            return str(Path(p).resolve().relative_to(PROJECT_ROOT))
+
+        out = res.to_dict()
+        out["original_path"] = rel(out["original_path"])
+        out["ela_path"] = rel(out["ela_path"])
+        return out
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"ELA failed: {e}")
+
+
+# ---------- Report: Generate PDF ----------
+class ReportGenerateRequest(BaseModel):
+    header: Dict[str, Any]
+    evidence: List[Dict[str, Any]]
+    findings: List[Dict[str, Any]]
+    forensics: Dict[str, Any]
+    bundle_json: Optional[Dict[str, Any]] = None
+
+@app.post("/report/generate")
+def report_generate(req: ReportGenerateRequest):
+    """
+    Build a PDF that includes:
+      - Header (Case ID, Investigator, Station/Unit, Contact, Case Notes)
+      - Evidence table
+      - Findings with representative images
+      - Forensics (metadata summary, tamper flags, ELA thumbnails, deepfake score)
+      - Signatures (SHA-256 + demo self-signed signature)
+    Returns paths and signature details.
+    """
+    try:
+        # ---- Build dataclasses from request ----
+        hdr = req.header
+        header = ReportHeader(
+            case_id=str(hdr.get("case_id", "")),
+            investigator=str(hdr.get("investigator", "")),
+            station_unit=str(hdr.get("station_unit", "")),
+            contact=str(hdr.get("contact", "")),
+            case_notes=str(hdr.get("case_notes", "")),
+        )
+
+        evidence_items: List[EvidenceItem] = []
+        for e in req.evidence:
+            evidence_items.append(EvidenceItem(
+                filename=str(e.get("filename", "")),
+                sha256=str(e.get("sha256", "")),
+                ingest_time=str(e.get("ingest_time", "")),
+                camera_id=str(e.get("camera_id", "unknown")),
+                duration=(float(e["duration"]) if e.get("duration") is not None else None),
+            ))
+
+        findings_items: List[FindingItem] = []
+        for f in req.findings:
+            bbox_val = f.get("bbox")
+            bbox_t = tuple(bbox_val) if bbox_val is not None else None
+            findings_items.append(FindingItem(
+                time_window=str(f.get("time_window", "")),
+                track_id=(int(f["track_id"]) if f.get("track_id") is not None else None),
+                object_type=str(f.get("object_type", "")),
+                representative_frame_path=str(f.get("representative_frame_path")) if f.get("representative_frame_path") else None,
+                bbox=bbox_t,  # (x,y,w,h)
+                matched_offender_id=str(f.get("matched_offender_id")) if f.get("matched_offender_id") else None,
+                matched_offender_name=str(f.get("matched_offender_name")) if f.get("matched_offender_name") else None,
+                similarity_score=(float(f["similarity_score"]) if f.get("similarity_score") is not None else None),
+                verification_status=str(f.get("verification_status", "unknown")),
+            ))
+
+        fx = req.forensics
+        fb = ForensicBlock(
+            metadata_summary=dict(fx.get("metadata_summary", {})),
+            tamper_flags=[str(x) for x in fx.get("tamper_flags", [])],
+            ela_thumbnails=[str(x) for x in fx.get("ela_thumbnails", [])],
+            deepfake_score=(float(fx["deepfake_score"]) if fx.get("deepfake_score") is not None else None),
+        )
+
+        spec = ReportSpec(
+            header=header,
+            evidence=evidence_items,
+            findings=findings_items,
+            forensics=fb,
+            bundle_json=req.bundle_json or {},
+        )
+
+        # ---- Generate PDF ----
+        REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+        ASSETS_DIR.mkdir(parents=True, exist_ok=True)
+        result = generate_report(spec)
+
+        # Return paths relative to project root for the UI
+        def rel(p: str) -> str:
+            return str(Path(p).resolve().relative_to(PROJECT_ROOT))
+
+        return {
+            **result,
+            "pdf_path": rel(result["pdf_path"]),
+            "json_path": rel(result["json_path"]),
+            "qr_path": rel(result["qr_path"]),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Report generation failed: {e}")

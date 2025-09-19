@@ -1,0 +1,198 @@
+{
+  "report_id": "328d1ab2a15e098ebff427f04ad9b33ce1ed25fb",
+  "generation_time_utc": "2025-09-19T20:11:28.711826+00:00",
+  "generating_system_version": "0.5.0",
+  "header": {
+    "case_id": "2345",
+    "investigator": "asdfgh",
+    "station_unit": "jhgfds12345678",
+    "contact": "234567",
+    "case_notes": "dsjfhkljcm"
+  },
+  "evidence": [
+    {
+      "filename": "cc65a963-5887-4438-af67-fbec6d9a807a_Corporate.mp4",
+      "sha256": "c209f2d2789e5ebd6013d3c1bbe83da29ad98d0a10d514ec721bf372012ed56a",
+      "ingest_time": "2025-09-19T20:11:28.616057Z",
+      "camera_id": "1234569012345679234567",
+      "duration": 16.950567
+    },
+    {
+      "filename": "cf034c25-b5ed-4d72-9251-68b9d4b0f937_timage.jpg",
+      "sha256": "281326c20dfa9f76644dd6809d5a4703f848f7c6e9d1ec884183311fed617ec0",
+      "ingest_time": "2025-09-19T20:11:28.619596Z",
+      "camera_id": "1234569012345679234567",
+      "duration": null
+    },
+    {
+      "filename": "c01545a4-1943-4d6b-9a69-d3bd8b3023d5_timage.jpg",
+      "sha256": "281326c20dfa9f76644dd6809d5a4703f848f7c6e9d1ec884183311fed617ec0",
+      "ingest_time": "2025-09-19T20:11:28.622089Z",
+      "camera_id": "1234569012345679234567",
+      "duration": null
+    }
+  ],
+  "findings": [],
+  "forensics": {
+    "metadata_summary": {
+      "path": "/workspaces/ghtest/data/uploads/cc65a963-5887-4438-af67-fbec6d9a807a_Corporate.mp4",
+      "size_bytes": 4420935,
+      "sha256": "c209f2d2789e5ebd6013d3c1bbe83da29ad98d0a10d514ec721bf372012ed56a",
+      "mime": "video/mp4",
+      "kind": "video",
+      "details": {
+        "type": "video",
+        "ffprobe": {
+          "streams": [
+            {
+              "index": 0,
+              "codec_name": "h264",
+              "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+              "profile": "High",
+              "codec_type": "video",
+              "codec_tag_string": "avc1",
+              "codec_tag": "0x31637661",
+              "width": 1920,
+              "height": 1080,
+              "coded_width": 1920,
+              "coded_height": 1080,
+              "closed_captions": 0,
+              "film_grain": 0,
+              "has_b_frames": 1,
+              "sample_aspect_ratio": "1:1",
+              "display_aspect_ratio": "16:9",
+              "pix_fmt": "yuv420p",
+              "level": 40,
+              "color_range": "tv",
+              "color_space": "bt709",
+              "color_transfer": "bt709",
+              "color_primaries": "bt709",
+              "chroma_location": "left",
+              "field_order": "progressive",
+              "refs": 1,
+              "is_avc": "true",
+              "nal_length_size": "4",
+              "id": "0x1",
+              "r_frame_rate": "24000/1001",
+              "avg_frame_rate": "24000/1001",
+              "time_base": "1/24000",
+              "start_pts": 0,
+              "start_time": "0.000000",
+              "duration_ts": 405405,
+              "duration": "16.891875",
+              "bit_rate": "1958861",
+              "bits_per_raw_sample": "8",
+              "nb_frames": "405",
+              "extradata_size": 44,
+              "disposition": {
+                "default": 1,
+                "dub": 0,
+                "original": 0,
+                "comment": 0,
+                "lyrics": 0,
+                "karaoke": 0,
+                "forced": 0,
+                "hearing_impaired": 0,
+                "visual_impaired": 0,
+                "clean_effects": 0,
+                "attached_pic": 0,
+                "timed_thumbnails": 0,
+                "non_diegetic": 0,
+                "captions": 0,
+                "descriptions": 0,
+                "metadata": 0,
+                "dependent": 0,
+                "still_image": 0
+              },
+              "tags": {
+                "language": "und",
+                "handler_name": "ISO Media file produced by Google Inc.",
+                "vendor_id": "[0][0][0][0]"
+              }
+            },
+            {
+              "index": 1,
+              "codec_name": "aac",
+              "codec_long_name": "AAC (Advanced Audio Coding)",
+              "profile": "LC",
+              "codec_type": "audio",
+              "codec_tag_string": "mp4a",
+              "codec_tag": "0x6134706d",
+              "sample_fmt": "fltp",
+              "sample_rate": "44100",
+              "channels": 2,
+              "channel_layout": "stereo",
+              "bits_per_sample": 0,
+              "initial_padding": 0,
+              "id": "0x2",
+              "r_frame_rate": "0/0",
+              "avg_frame_rate": "0/0",
+              "time_base": "1/44100",
+              "start_pts": 0,
+              "start_time": "0.000000",
+              "duration_ts": 747520,
+              "duration": "16.950567",
+              "bit_rate": "128044",
+              "nb_frames": "730",
+              "extradata_size": 16,
+              "disposition": {
+                "default": 1,
+                "dub": 0,
+                "original": 0,
+                "comment": 0,
+                "lyrics": 0,
+                "karaoke": 0,
+                "forced": 0,
+                "hearing_impaired": 0,
+                "visual_impaired": 0,
+                "clean_effects": 0,
+                "attached_pic": 0,
+                "timed_thumbnails": 0,
+                "non_diegetic": 0,
+                "captions": 0,
+                "descriptions": 0,
+                "metadata": 0,
+                "dependent": 0,
+                "still_image": 0
+              },
+              "tags": {
+                "language": "eng",
+                "handler_name": "ISO Media file produced by Google Inc.",
+                "vendor_id": "[0][0][0][0]"
+              }
+            }
+          ],
+          "format": {
+            "filename": "/workspaces/ghtest/data/uploads/cc65a963-5887-4438-af67-fbec6d9a807a_Corporate.mp4",
+            "nb_streams": 2,
+            "nb_programs": 0,
+            "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+            "format_long_name": "QuickTime / MOV",
+            "start_time": "0.000000",
+            "duration": "16.950567",
+            "size": "4420935",
+            "bit_rate": "2086507",
+            "probe_score": 100,
+            "tags": {
+              "major_brand": "isom",
+              "minor_version": "512",
+              "compatible_brands": "isomiso2avc1mp41",
+              "encoder": "Lavf62.4.102"
+            }
+          }
+        },
+        "duration_sec": 16.950567,
+        "bit_rate": 2086507,
+        "width": 1920,
+        "height": 1080,
+        "fps": 23.976023976023978,
+        "codec_name": "h264"
+      }
+    },
+    "tamper_flags": [],
+    "ela_thumbnails": [
+      "data/reports/assets/cc65a963-5887-4438-af67-fbec6d9a807a_Corporate_frame1.ELA.q90.png"
+    ],
+    "deepfake_score": 0.49
+  }
+}

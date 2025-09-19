@@ -1,0 +1,20 @@
+{
+  "report_id": "ff69b2855b834d1f168088a8fa57ac2ae91ad6b0",
+  "generation_time_utc": "2025-09-19T20:29:45.310923+00:00",
+  "generating_system_version": "0.5.0",
+  "header": {
+    "case_id": "",
+    "investigator": "",
+    "station_unit": "",
+    "contact": "",
+    "case_notes": ""
+  },
+  "evidence": [],
+  "findings": [],
+  "forensics": {
+    "metadata_summary": {},
+    "tamper_flags": [],
+    "ela_thumbnails": [],
+    "deepfake_score": 0.0
+  }
+}

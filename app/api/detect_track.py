@@ -21,17 +21,16 @@ UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 router = APIRouter(prefix="/api", tags=["detection-tracking"])
 
-# Default thresholds (balanced for accuracy on CPU)
+# Default thresholds
 DEFAULT_CONF = 0.35
 DEFAULT_IOU  = 0.50
 DEFAULT_MINLEN = 5   # frames
-DEFAULT_STRIDE = 1   # process each frame; set 2+ for speed on big videos
+DEFAULT_STRIDE = 1
 
 def _save_upload(tmp: UploadFile, dst_dir: Path) -> Path:
     suffix = Path(tmp.filename or "upload.bin").suffix
     safe_name = Path(tmp.filename or "upload").name
     out = dst_dir / safe_name
-    # If a file with same name exists, append a numeric suffix
     if out.exists():
         stem = out.stem
         ext = out.suffix
@@ -46,8 +45,23 @@ def _save_upload(tmp: UploadFile, dst_dir: Path) -> Path:
         shutil.copyfileobj(tmp.file, f)
     return out
 
+def _resolve_uploaded(stored_name: str) -> Path:
+    p = (UPLOADS_DIR / stored_name).resolve()
+    if not p.exists():
+        raise FileNotFoundError(f"Stored file not found: {stored_name}")
+    return p
+
+def _rel(path: Optional[str]) -> Optional[str]:
+    if not path:
+        return None
+    try:
+        p = Path(path).resolve()
+        return str(p.relative_to(PROJECT_ROOT))
+    except Exception:
+        return path  # fall back to whatever it is
+
 # ---------------------------
-# /api/detect/image
+# Upload routes (existing)
 # ---------------------------
 @router.post("/detect/image")
 def detect_image(
@@ -62,18 +76,15 @@ def detect_image(
         res = det.detect_image(path, annotate=True)
         return JSONResponse({
             "ok": True,
-            "source_path": res.source_path,
-            "annotated_path": res.annotated_path,
-            "json_path": res.json_path,
+            "source_path": _rel(res.source_path),
+            "annotated_path": _rel(res.annotated_path),
+            "json_path": _rel(res.json_path),
             "num_frames": res.num_frames,
             "total_detections": res.total_detections,
         })
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"detect_image failed: {e}")
 
-# ---------------------------
-# /api/detect/video
-# ---------------------------
 @router.post("/detect/video")
 def detect_video(
     video: UploadFile = File(...),
@@ -89,18 +100,15 @@ def detect_video(
         res = det.detect_video(path, annotate=True, stride=stride, max_frames=max_frames)
         return JSONResponse({
             "ok": True,
-            "source_path": res.source_path,
-            "annotated_path": res.annotated_path,
-            "json_path": res.json_path,
+            "source_path": _rel(res.source_path),
+            "annotated_path": _rel(res.annotated_path),
+            "json_path": _rel(res.json_path),
             "num_frames": res.num_frames,
             "total_detections": res.total_detections,
         })
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"detect_video failed: {e}")
 
-# ---------------------------
-# /api/track/video  (YOLO + ByteTrack)
-# ---------------------------
 @router.post("/track/video")
 def track_video(
     video: UploadFile = File(...),
@@ -108,7 +116,7 @@ def track_video(
     conf: float = Form(DEFAULT_CONF),
     iou: float = Form(DEFAULT_IOU),
     min_track_len: int = Form(DEFAULT_MINLEN),
-    device: Optional[str] = Form(None),  # "cpu" or "0" for first GPU
+    device: Optional[str] = Form(None),
 ):
     try:
         path = _save_upload(video, UPLOADS_DIR)
@@ -122,13 +130,94 @@ def track_video(
         res = tr.track_video(path, device=device)
         return JSONResponse({
             "ok": True,
-            "source_path": res.source_path,
-            "annotated_path": res.annotated_path,
-            "tracks_json_path": res.tracks_json_path,
-            "findings_json_path": res.findings_json_path,
+            "source_path": _rel(res.source_path),
+            "annotated_path": _rel(res.annotated_path),
+            "tracks_json_path": _rel(res.tracks_json_path),
+            "findings_json_path": _rel(res.findings_json_path),
             "total_tracks": res.total_tracks,
             "total_frames": res.total_frames,
             "fps": res.fps,
         })
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"track_video failed: {e}")
+
+# ---------------------------
+# NEW: by-filename routes
+# ---------------------------
+@router.post("/detect/image/by-filename/{stored_name}")
+def detect_image_by_filename(
+    stored_name: str,
+    model_name: str = Form("yolov8l.pt"),
+    conf: float = Form(DEFAULT_CONF),
+    iou: float = Form(DEFAULT_IOU),
+):
+    try:
+        path = _resolve_uploaded(stored_name)
+        det = YoloDetector(model_name=model_name, conf=conf, iou=iou, classes=PERSON_AND_VEHICLES)
+        res = det.detect_image(path, annotate=True)
+        return JSONResponse({
+            "ok": True,
+            "source_path": _rel(res.source_path),
+            "annotated_path": _rel(res.annotated_path),
+            "json_path": _rel(res.json_path),
+            "num_frames": res.num_frames,
+            "total_detections": res.total_detections,
+        })
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"detect_image_by_filename failed: {e}")
+
+@router.post("/detect/video/by-filename/{stored_name}")
+def detect_video_by_filename(
+    stored_name: str,
+    model_name: str = Form("yolov8l.pt"),
+    conf: float = Form(DEFAULT_CONF),
+    iou: float = Form(DEFAULT_IOU),
+    stride: int = Form(DEFAULT_STRIDE),
+    max_frames: Optional[int] = Form(None),
+):
+    try:
+        path = _resolve_uploaded(stored_name)
+        det = YoloDetector(model_name=model_name, conf=conf, iou=iou, classes=PERSON_AND_VEHICLES)
+        res = det.detect_video(path, annotate=True, stride=stride, max_frames=max_frames)
+        return JSONResponse({
+            "ok": True,
+            "source_path": _rel(res.source_path),
+            "annotated_path": _rel(res.annotated_path),
+            "json_path": _rel(res.json_path),
+            "num_frames": res.num_frames,
+            "total_detections": res.total_detections,
+        })
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"detect_video_by_filename failed: {e}")
+
+@router.post("/track/video/by-filename/{stored_name}")
+def track_video_by_filename(
+    stored_name: str,
+    model_name: str = Form("yolov8l.pt"),
+    conf: float = Form(DEFAULT_CONF),
+    iou: float = Form(DEFAULT_IOU),
+    min_track_len: int = Form(DEFAULT_MINLEN),
+    device: Optional[str] = Form(None),
+):
+    try:
+        path = _resolve_uploaded(stored_name)
+        tr = YoloByteTrack(
+            model_name=model_name,
+            conf=conf,
+            iou=iou,
+            classes=PERSON_AND_VEHICLES,
+            min_track_len=min_track_len,
+        )
+        res = tr.track_video(path, device=device)
+        return JSONResponse({
+            "ok": True,
+            "source_path": _rel(res.source_path),
+            "annotated_path": _rel(res.annotated_path),
+            "tracks_json_path": _rel(res.tracks_json_path),
+            "findings_json_path": _rel(res.findings_json_path),
+            "total_tracks": res.total_tracks,
+            "total_frames": res.total_frames,
+            "fps": res.fps,
+        })
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"track_video_by_filename failed: {e}")

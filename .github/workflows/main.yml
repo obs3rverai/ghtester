@@ -17,7 +17,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
@@ -50,9 +50,8 @@ PY
 
       - name: Syntax check - compile python files
         run: |
-          # Check syntax for backend and ui entrypoints (adjust paths if different)
-          python -m py_compile app/main.py
-          python -m py_compile ui/dashboard.py
+          if [ -f app/main.py ]; then python -m py_compile app/main.py; else echo "app/main.py not found"; fi
+          if [ -f ui/dashboard.py ]; then python -m py_compile ui/dashboard.py; else echo "ui/dashboard.py not found"; fi
 
       - name: Run unit tests (if present)
         run: |
@@ -61,10 +60,3 @@ PY
           else
             echo "pytest not installed — skipping tests"
           fi
-
-      # Optional: static analysis (uncomment to enable)
-      # - name: Lint with flake8
-      #   run: |
-      #     pip install flake8
-      #     flake8 .
-

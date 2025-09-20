@@ -1,0 +1,1061 @@
+{
+  "source_path": "/workspaces/ghtest/data/uploads/videoplayback.mp4",
+  "findings": [
+    {
+      "time_window": "0.00s .. 18.80s",
+      "track_id": 1,
+      "object_type": "car",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track1.mid282.jpg",
+      "bbox": [
+        828,
+        211,
+        1100,
+        366
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "0.00s .. 3.10s",
+      "track_id": 2,
+      "object_type": "car",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track2.mid46.jpg",
+      "bbox": [
+        755,
+        170,
+        1003,
+        290
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "0.00s .. 3.10s",
+      "track_id": 3,
+      "object_type": "car",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track3.mid46.jpg",
+      "bbox": [
+        1196,
+        405,
+        1279,
+        579
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "0.00s .. 3.10s",
+      "track_id": 4,
+      "object_type": "motorcycle",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track4.mid46.jpg",
+      "bbox": [
+        1033,
+        317,
+        1131,
+        444
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "0.00s .. 2.73s",
+      "track_id": 5,
+      "object_type": "car",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track5.mid41.jpg",
+      "bbox": [
+        313,
+        69,
+        387,
+        124
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "0.00s .. 3.10s",
+      "track_id": 6,
+      "object_type": "motorcycle",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track6.mid46.jpg",
+      "bbox": [
+        754,
+        226,
+        827,
+        359
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "1.37s .. 3.10s",
+      "track_id": 7,
+      "object_type": "motorcycle",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track7.mid67.jpg",
+      "bbox": [
+        1096,
+        341,
+        1189,
+        472
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "3.17s .. 12.77s",
+      "track_id": 8,
+      "object_type": "car",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track8.mid239.jpg",
+      "bbox": [
+        686,
+        34,
+        1270,
+        312
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "3.17s .. 4.60s",
+      "track_id": 9,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track9.mid116.jpg",
+      "bbox": [
+        639,
+        186,
+        756,
+        364
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "3.20s .. 12.77s",
+      "track_id": 10,
+      "object_type": "motorcycle",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track10.mid239.jpg",
+      "bbox": [
+        582,
+        310,
+        816,
+        574
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "4.07s .. 7.90s",
+      "track_id": 11,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track11.mid179.jpg",
+      "bbox": [
+        814,
+        129,
+        1019,
+        399
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "4.40s .. 12.77s",
+      "track_id": 12,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track12.mid257.jpg",
+      "bbox": [
+        604,
+        170,
+        801,
+        534
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "12.63s .. 12.83s",
+      "track_id": 26,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track26.mid382.jpg",
+      "bbox": [
+        836,
+        170,
+        925,
+        285
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "12.83s .. 18.80s",
+      "track_id": 27,
+      "object_type": "motorcycle",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track27.mid474.jpg",
+      "bbox": [
+        1096,
+        340,
+        1190,
+        472
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "12.83s .. 18.80s",
+      "track_id": 28,
+      "object_type": "motorcycle",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track28.mid474.jpg",
+      "bbox": [
+        1035,
+        319,
+        1132,
+        444
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "12.83s .. 17.67s",
+      "track_id": 29,
+      "object_type": "car",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track29.mid457.jpg",
+      "bbox": [
+        1198,
+        556,
+        1271,
+        718
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "12.83s .. 14.37s",
+      "track_id": 30,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track30.mid408.jpg",
+      "bbox": [
+        728,
+        248,
+        798,
+        368
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "12.83s .. 15.80s",
+      "track_id": 31,
+      "object_type": "motorcycle",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track31.mid429.jpg",
+      "bbox": [
+        916,
+        410,
+        1020,
+        540
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "12.83s .. 13.23s",
+      "track_id": 32,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track32.mid391.jpg",
+      "bbox": [
+        779,
+        219,
+        812,
+        271
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "12.83s .. 18.80s",
+      "track_id": 33,
+      "object_type": "car",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track33.mid474.jpg",
+      "bbox": [
+        311,
+        69,
+        388,
+        125
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "12.97s .. 18.80s",
+      "track_id": 34,
+      "object_type": "car",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track34.mid476.jpg",
+      "bbox": [
+        751,
+        170,
+        1009,
+        290
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "14.17s .. 15.07s",
+      "track_id": 35,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track35.mid438.jpg",
+      "bbox": [
+        874,
+        297,
+        923,
+        376
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "14.37s .. 15.33s",
+      "track_id": 36,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track36.mid445.jpg",
+      "bbox": [
+        931,
+        359,
+        1022,
+        547
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "15.67s .. 16.27s",
+      "track_id": 37,
+      "object_type": "motorcycle",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track37.mid479.jpg",
+      "bbox": [
+        1127,
+        408,
+        1280,
+        649
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "16.07s .. 17.40s",
+      "track_id": 38,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track38.mid502.jpg",
+      "bbox": [
+        1125,
+        402,
+        1280,
+        686
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "17.00s .. 17.87s",
+      "track_id": 39,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track39.mid523.jpg",
+      "bbox": [
+        1196,
+        621,
+        1280,
+        718
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "17.47s .. 18.80s",
+      "track_id": 40,
+      "object_type": "car",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track40.mid544.jpg",
+      "bbox": [
+        1197,
+        405,
+        1280,
+        578
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "18.87s .. 25.47s",
+      "track_id": 41,
+      "object_type": "car",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track41.mid665.jpg",
+      "bbox": [
+        49,
+        49,
+        396,
+        327
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "19.27s .. 20.60s",
+      "track_id": 42,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track42.mid598.jpg",
+      "bbox": [
+        0,
+        354,
+        153,
+        555
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "20.97s .. 25.40s",
+      "track_id": 44,
+      "object_type": "motorcycle",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track44.mid695.jpg",
+      "bbox": [
+        515,
+        51,
+        573,
+        163
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "21.07s .. 25.47s",
+      "track_id": 45,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track45.mid698.jpg",
+      "bbox": [
+        625,
+        77,
+        710,
+        222
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "21.07s .. 21.80s",
+      "track_id": 46,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track46.mid643.jpg",
+      "bbox": [
+        47,
+        296,
+        149,
+        432
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "22.07s .. 22.73s",
+      "track_id": 47,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track47.mid672.jpg",
+      "bbox": [
+        340,
+        194,
+        418,
+        350
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "23.87s .. 24.07s",
+      "track_id": 48,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track48.mid719.jpg",
+      "bbox": [
+        538,
+        63,
+        573,
+        121
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "24.13s .. 24.70s",
+      "track_id": 49,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track49.mid732.jpg",
+      "bbox": [
+        537,
+        63,
+        617,
+        191
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "25.53s .. 44.50s",
+      "track_id": 50,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track50.mid1050.jpg",
+      "bbox": [
+        25,
+        440,
+        287,
+        715
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "25.53s .. 26.40s",
+      "track_id": 51,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track51.mid779.jpg",
+      "bbox": [
+        443,
+        81,
+        519,
+        196
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "25.57s .. 33.47s",
+      "track_id": 52,
+      "object_type": "motorcycle",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track52.mid885.jpg",
+      "bbox": [
+        264,
+        233,
+        458,
+        402
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "26.33s .. 27.67s",
+      "track_id": 53,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track53.mid810.jpg",
+      "bbox": [
+        265,
+        159,
+        406,
+        323
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "27.77s .. 28.00s",
+      "track_id": 54,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track54.mid836.jpg",
+      "bbox": [
+        455,
+        73,
+        552,
+        225
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "28.27s .. 29.80s",
+      "track_id": 55,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track55.mid871.jpg",
+      "bbox": [
+        416,
+        70,
+        479,
+        168
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "28.67s .. 30.07s",
+      "track_id": 56,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track56.mid881.jpg",
+      "bbox": [
+        403,
+        46,
+        558,
+        407
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "28.93s .. 29.87s",
+      "track_id": 57,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track57.mid882.jpg",
+      "bbox": [
+        400,
+        48,
+        609,
+        371
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "30.47s .. 34.90s",
+      "track_id": 58,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track58.mid980.jpg",
+      "bbox": [
+        343,
+        78,
+        414,
+        242
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "32.33s .. 43.47s",
+      "track_id": 59,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track59.mid1137.jpg",
+      "bbox": [
+        14,
+        346,
+        179,
+        667
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "34.93s .. 35.07s",
+      "track_id": 62,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track62.mid1050.jpg",
+      "bbox": [
+        171,
+        103,
+        278,
+        409
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "35.73s .. 37.30s",
+      "track_id": 63,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track63.mid1095.jpg",
+      "bbox": [
+        328,
+        61,
+        426,
+        264
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "36.07s .. 38.00s",
+      "track_id": 64,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track64.mid1111.jpg",
+      "bbox": [
+        339,
+        53,
+        413,
+        222
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "37.67s .. 42.40s",
+      "track_id": 66,
+      "object_type": "motorcycle",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track66.mid1201.jpg",
+      "bbox": [
+        0,
+        403,
+        181,
+        577
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "40.77s .. 41.87s",
+      "track_id": 67,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track67.mid1239.jpg",
+      "bbox": [
+        0,
+        144,
+        85,
+        467
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "44.57s .. 56.47s",
+      "track_id": 69,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track69.mid1515.jpg",
+      "bbox": [
+        581,
+        137,
+        736,
+        486
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "44.57s .. 54.47s",
+      "track_id": 70,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track70.mid1485.jpg",
+      "bbox": [
+        492,
+        56,
+        567,
+        218
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "44.57s .. 44.80s",
+      "track_id": 71,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track71.mid1340.jpg",
+      "bbox": [
+        520,
+        203,
+        617,
+        322
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "44.67s .. 62.70s",
+      "track_id": 72,
+      "object_type": "bus",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track72.mid1610.jpg",
+      "bbox": [
+        48,
+        50,
+        396,
+        328
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "45.33s .. 56.47s",
+      "track_id": 73,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track73.mid1527.jpg",
+      "bbox": [
+        445,
+        117,
+        656,
+        480
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "46.17s .. 49.10s",
+      "track_id": 74,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track74.mid1429.jpg",
+      "bbox": [
+        481,
+        45,
+        576,
+        198
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "50.53s .. 54.87s",
+      "track_id": 75,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track75.mid1581.jpg",
+      "bbox": [
+        529,
+        55,
+        618,
+        201
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "54.87s .. 62.00s",
+      "track_id": 76,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track76.mid1753.jpg",
+      "bbox": [
+        954,
+        353,
+        1038,
+        483
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "55.33s .. 60.20s",
+      "track_id": 77,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track77.mid1733.jpg",
+      "bbox": [
+        942,
+        312,
+        1036,
+        486
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "56.53s .. 57.27s",
+      "track_id": 78,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track78.mid1707.jpg",
+      "bbox": [
+        385,
+        199,
+        488,
+        431
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "56.53s .. 62.70s",
+      "track_id": 79,
+      "object_type": "car",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track79.mid1788.jpg",
+      "bbox": [
+        836,
+        1,
+        1036,
+        138
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "56.80s .. 57.00s",
+      "track_id": 80,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track80.mid1707.jpg",
+      "bbox": [
+        257,
+        257,
+        302,
+        424
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "57.27s .. 60.80s",
+      "track_id": 81,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track81.mid1771.jpg",
+      "bbox": [
+        815,
+        389,
+        1000,
+        647
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "59.33s .. 62.70s",
+      "track_id": 82,
+      "object_type": "motorcycle",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track82.mid1830.jpg",
+      "bbox": [
+        296,
+        269,
+        514,
+        384
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "59.40s .. 62.70s",
+      "track_id": 83,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track83.mid1831.jpg",
+      "bbox": [
+        843,
+        375,
+        1018,
+        620
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    },
+    {
+      "time_window": "60.73s .. 61.73s",
+      "track_id": 84,
+      "object_type": "person",
+      "representative_frame_path": "/workspaces/ghtest/data/frames/tracks/videoplayback.track84.mid1837.jpg",
+      "bbox": [
+        1082,
+        387,
+        1246,
+        715
+      ],
+      "matched_offender_id": null,
+      "matched_offender_name": null,
+      "similarity_score": null,
+      "verification_status": "unverified"
+    }
+  ]
+}

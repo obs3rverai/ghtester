@@ -7,3 +7,21 @@ app/__pycache__/main.cpython-312.pyc
 app/__pycache__/main.cpython-312.pyc
 *mp4
 data/annotated/cc65a963-5887-4438-af67-fbec6d9a807a_Corporate_1.det.mp4
+data/annotated/118ae3ef-c415-4f27-9417-e28bc112334f_timage.det.jpg
+*.jpg
+*.json
+data/detections/Corporate.detections.json
+
+# large model weights
+*.pt
+weights/
+data/detections/Corporate_2.detections.json
+
+# large artifacts
+*.pt
+*.onnx
+*.mp4
+weights/
+runs/
+ultralytics/
+.venv/

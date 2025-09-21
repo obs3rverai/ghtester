@@ -37,6 +37,8 @@ from app.api.detect_track import router as detect_track_router
 app.include_router(detect_track_router)
 from app.api.verify import router as verify_router
 app.include_router(verify_router)
+from app.api.files_admin import router as files_admin_router
+app.include_router(files_admin_router)   # exposes DELETE /files/{stored_name}
 
 # Try to import YOLO service (optional)
 try:

@@ -7,7 +7,6 @@ pillow
 numpy
 streamlit
 opencv-python
-insightfaceaiofiles==24.1.0
 albucore==0.0.24
 albumentations==2.0.8
 altair==5.5.0
@@ -33,6 +32,7 @@ flatbuffers==25.2.10
 fonttools==4.60.0
 fpdf2==2.8.4
 fsspec==2024.6.1
+ffmpeg
 gitdb==4.0.12
 GitPython==3.1.45
 h11==0.16.0
@@ -104,9 +104,9 @@ tenacity==9.1.2
 threadpoolctl==3.6.0
 tifffile==2025.9.9
 toml==0.10.2
-torch==2.8.0+cpu
-torchaudio==2.8.0+cpu
-torchvision==0.23.0+cpu
+torch
+torchaudio
+torchvision
 tornado==6.5.2
 tqdm==4.67.1
 typing-inspection==0.4.1
@@ -116,7 +116,6 @@ ultralytics==8.2.103
 ultralytics-thop==2.0.17
 urllib3==2.5.0
 uvicorn==0.35.0
-uvloop==0.21.0
 watchdog==6.0.0
 watchfiles==1.1.0
 wcwidth==0.2.13
